@@ -93,6 +93,19 @@ class Parser(object):
         tag, body = self.parse_packet_header(data)
         return self.parse_packet_contents(tag, body)
 
+    def parse_mpi(self, octets):
+        bits = (octets[0]<<8) | octets[1]
+        print("MPI bits: %d" % bits)
+
+        length = ((bits + 7) // 8)
+
+        number = 0
+        for i in range(length):
+            number <<= 8
+            number += octets[2+i]
+
+        return bits, number
+
     def parse_packet_header(self, octets):
         if (octets[0] & (1<<7)) != (1<<7):
             raise ValueError("Invalid packet; no leading set bit")
@@ -114,14 +127,14 @@ class Parser(object):
 
         body_length = {
             0: octets[1],
-            1: (octets[1]<<8) + octets[2],
-            2: (octets[1]<<24) + (octets[2]<<16) + (octets[3]<<8) + octets[4],
+            1: (octets[1]<<8) | octets[2],
+            2: (octets[1]<<24) | (octets[2]<<16) | (octets[3]<<8) | octets[4],
         }[length_type]
 
         print("Header length: %d" % header_length)
         print("Body length: %d" % body_length)
 
-        body = octets[header_length:body_length - header_length]
+        body = octets[header_length:]
         return tag, body
 
     def parse_packet_contents(self, tag, octets):
@@ -153,20 +166,26 @@ class Parser(object):
         self.contents["key_id"] = key_id
         print("PK Key ID: %s" % "".join(map(lambda s: "%02x" %s, key_id)))
 
-        pk_algo = octets[10]
+        pk_algo = octets[9]
         self.contents["pk_algo"] = pk_algo
 
-        print("Public key algorithm: 0x%02x" % pk_algo)
         print("PK Algorithm (0x%02x): %s" % (pk_algo, self.pk_algos[pk_algo]))
 
-        if pk_algo == 1:
-            raise NotImplementedError("Unsupported public key algorithm")
+        if pk_algo != 1:
+            raise NotImplementedError("Unsupported public key algorithm: %s" %
+                    self.pk_algos[pk_algo])
 
-        encrypted_session_key = octets[11:]
+        encrypted_session_key = octets[10:]
         print("PK Encrypted Session Key Length: %d" %
                 len(encrypted_session_key))
 
         # TODO: Parse algo specifics
+        bits, m = self.parse_mpi(encrypted_session_key)
+        print("%d-bit value of m (RSA m^e mod n): %d" % (bits, m))
+
+        mpi_length = ((bits + 7) // 8)+2
+        rest = encrypted_session_key[mpi_length:]
+        print("Remaining data: %d" % len(rest))
 
         return encrypted_session_key
 
