@@ -43,17 +43,17 @@ def decode(filename, version, data):
 
     raw = map(ord, data)
     ptag = int(raw[0])
-    print("PTag raw: 0x%x" % ptag)
+    print("PTag raw: 0x%02x" % ptag)
     assert (ptag & 0x80) == 0x80, "Incorrect PTag"
     print("PTag header OK")
     assert (ptag & 0x40) == 0, "Unsupported packet format"
     print("Old format OK")
 
     tag = (ptag & 0x3c) >> 2
-    print("PTag: 0x%x" % tag)
+    print("PTag: 0x%02x" % tag)
 
     ltype = (ptag & 0x03)
-    print("Length-type raw: 0x%x" % ltype)
+    print("Length-type raw: 0x%02x" % ltype)
     plen, hlen = {0: (1,2), 1: (2,3), 3: (-1, 1)}.get(ltype)
     print("Packet has a %d-octet length" % plen)
     print("The header is %d-octet%s long" % (hlen, "s" if hlen==0 else ""))
@@ -96,10 +96,10 @@ def decode(filename, version, data):
     print("Version number: %d" % version_no)
 
     keyid = raw[3:3+8]
-    print("KeyID: %s" % "".join(map(lambda s: s[2:], map(hex, keyid))))
+    print("KeyID: %s" % "".join(map(lambda s: "%02x" %s, keyid)))
 
     pubkey_algo = raw[11]
-    print("Public key algorithm: 0x%x" % pubkey_algo)
+    print("Public key algorithm: 0x%02x" % pubkey_algo)
     print("Public key algorithm: %s" % {
         1:   "RSA (Encrypt or Sign) [HAC]",
         2:   "RSA Encrypt-Only [HAC]",
@@ -123,7 +123,7 @@ def decode(filename, version, data):
         110: "Private/Experimental algorithm",
     }.get(pubkey_algo))
 
-    encrypted_session_key = raw[12:bodylen-12]
+    encrypted_session_key = raw[12:bodylen-12+1]
     print("Encrypted session key length: %d" % len(encrypted_session_key))
 
     return filename, version, data
