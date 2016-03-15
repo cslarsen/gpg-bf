@@ -1,2 +1,2 @@
 check:
-	python gpgdec.py test.txt.asc
+	python gpgbf.py test.txt.asc
