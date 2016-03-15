@@ -29,6 +29,13 @@ def parse(file):
                 data.append(line.strip())
     return file.name, version, base64.decodestring("".join(data))
 
+def nibbles(bytes):
+    out = []
+    for byte in bytes:
+        out.append((byte & 0xf0) >> 4)
+        out.append(byte & 0x0f)
+    return out
+
 def decode(filename, version, data):
     print("Filename: %s" % filename)
     print("Version: %s" % version)
@@ -55,7 +62,8 @@ def decode(filename, version, data):
     bodylen = raw[1]
     print("Body length: %d octets" % bodylen)
 
-    assert (ptag & 0x3f) != 0, "Reserved - a packet tag MUST NOT have this value"
+    ptag = (raw[0] & 0x3c) >> 2
+    assert (ptag != 0), "Reserved - a packet tag MUST NOT have this value"
     print("Packet tag: %s" % {
          0: "Reserved - a packet tag MUST NOT have this value",
          1: "Public-Key Encrypted Session Key Packet",
@@ -79,7 +87,44 @@ def decode(filename, version, data):
         61: "Private or Experimental Values",
         62: "Private or Experimental Values",
         63: "Private or Experimental Values",
-    }.get(ptag & 0x3f))
+    }.get(ptag))
+    assert ptag == 1, "Unsupported packet tag type"
+
+    assert raw[2] == 3, "Unsupported one-octet version number"
+
+    version_no = raw[2]
+    print("Version number: %d" % version_no)
+
+    keyid = raw[3:3+8]
+    print("KeyID: %s" % "".join(map(lambda s: s[2:], map(hex, keyid))))
+
+    pubkey_algo = raw[11]
+    print("Public key algorithm: 0x%x" % pubkey_algo)
+    print("Public key algorithm: %s" % {
+        1:   "RSA (Encrypt or Sign) [HAC]",
+        2:   "RSA Encrypt-Only [HAC]",
+        3:   "RSA Sign-Only [HAC]",
+        16:  "Elgamal (Encrypt-Only) [ELGAMAL] [HAC]",
+        17:  "DSA (Digital Signature Algorithm) [FIPS186] [HAC]",
+        18:  "Reserved for Elliptic Curve",
+        19:  "Reserved for ECDSA",
+        20:  "Reserved (formerly Elgamal Encrypt or Sign)",
+        21:  "Reserved for Diffie-Hellman (X9.42, as defined for IETF-S/MIME)",
+        100: "Private/Experimental algorithm",
+        101: "Private/Experimental algorithm",
+        102: "Private/Experimental algorithm",
+        103: "Private/Experimental algorithm",
+        104: "Private/Experimental algorithm",
+        105: "Private/Experimental algorithm",
+        106: "Private/Experimental algorithm",
+        107: "Private/Experimental algorithm",
+        108: "Private/Experimental algorithm",
+        109: "Private/Experimental algorithm",
+        110: "Private/Experimental algorithm",
+    }.get(pubkey_algo))
+
+    encrypted_session_key = raw[12:bodylen-12]
+    print("Encrypted session key length: %d" % len(encrypted_session_key))
 
     return filename, version, data
 
