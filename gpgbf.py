@@ -52,6 +52,34 @@ def decode(filename, version, data):
     print("The header is %d-octet%s long" % (hlen, "s" if hlen==0 else ""))
 
     assert ltype == 0, "Unsupported packet lengh-type"
+    bodylen = raw[1]
+    print("Body length: %d octets" % bodylen)
+
+    assert (ptag & 0x3f) != 0, "Reserved - a packet tag MUST NOT have this value"
+    print("Packet tag: %s" % {
+         0: "Reserved - a packet tag MUST NOT have this value",
+         1: "Public-Key Encrypted Session Key Packet",
+         2: "Signature Packet",
+         3: "Symmetric-Key Encrypted Session Key Packet",
+         4: "One-Pass Signature Packet",
+         5: "Secret-Key Packet",
+         6: "Public-Key Packet",
+         7: "Secret-Subkey Packet",
+         8: "Compressed Data Packet",
+         9: "Symmetrically Encrypted Data Packet",
+        10: "Marker Packet",
+        11: "Literal Data Packet",
+        12: "Trust Packet",
+        13: "User ID Packet",
+        14: "Public-Subkey Packet",
+        17: "User Attribute Packet",
+        18: "Sym. Encrypted and Integrity Protected Data Packet",
+        19: "Modification Detection Code Packet",
+        60: "Private or Experimental Values",
+        61: "Private or Experimental Values",
+        62: "Private or Experimental Values",
+        63: "Private or Experimental Values",
+    }.get(ptag & 0x3f))
 
     return filename, version, data
 
