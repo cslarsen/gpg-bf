@@ -36,8 +36,22 @@ def decode(filename, version, data):
 
     raw = map(ord, data)
     ptag = int(raw[0])
+    print("PTag raw: 0x%x" % ptag)
     assert (ptag & 0x80) == 0x80, "Incorrect PTag"
+    print("PTag header OK")
     assert (ptag & 0x40) == 0, "Unsupported packet format"
+    print("Old format OK")
+
+    tag = (ptag & 0x3c) >> 2
+    print("PTag: 0x%x" % tag)
+
+    ltype = (ptag & 0x03)
+    print("Length-type raw: 0x%x" % ltype)
+    plen, hlen = {0: (1,2), 1: (2,3), 3: (-1, 1)}.get(ltype)
+    print("Packet has a %d-octet length" % plen)
+    print("The header is %d-octet%s long" % (hlen, "s" if hlen==0 else ""))
+
+    assert ltype == 0, "Unsupported packet lengh-type"
 
     return filename, version, data
 
