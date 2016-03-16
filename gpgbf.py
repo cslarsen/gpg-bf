@@ -27,6 +27,10 @@ def parse_ascii_armored_file(file):
                 break
             elif len(line.strip()) > 0:
                 data.append(line.strip())
+
+    if not parsing:
+        raise ValueError("No PGP message found")
+
     data = base64.decodestring("".join(data))
     data = map(ord, data)
     return version, data
